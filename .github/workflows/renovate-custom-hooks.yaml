@@ -1,5 +1,7 @@
 name: renovate hooks
 
+permissions: {}
+
 on:
   pull_request:
     branches:
@@ -13,23 +15,27 @@ jobs:
   renovate-post-run:
     name: Renovate Post Upgrade Hook
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'jkroepke' && (github.actor == 'renovate[bot]' || github.actor == 'mend[bot]')
+    permissions:
+      contents: read
+    if: github.repository_owner == 'jkroepke' && github.actor == 'renovate[bot]' # zizmor: ignore[bot-conditions]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # Using a GitHub App token, because GitHub Actions doesn't run on commits from github-actions bot
       # Used App:
       # https://github.com/organizations/prometheus-community/settings/apps/helm-charts-renovate-helper.
       # Ref: https://github.com/prometheus-community/helm-charts/issues/5213.
-      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app-token
         with:
-          app-id: 1248576
+          client-id: 1248576
           private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+          permission-contents: 'write'
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: package.json
 
@@ -104,8 +110,8 @@ jobs:
 
           # Call GitHub API
           curl https://api.github.com/graphql -f \
-               -sSf -H "Authorization: Bearer $GITHUB_TOKEN" \
-               --data "@$JSON_PAYLOAD_FILE"
+            -sSf -H "Authorization: Bearer $GITHUB_TOKEN" \
+            --data "@$JSON_PAYLOAD_FILE"
 
           # Clean up temporary files
           rm "$FILE_CHANGES_JSON_FILE" "$JSON_PAYLOAD_FILE"
